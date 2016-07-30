@@ -601,21 +601,31 @@
         // animations when step is shown.
         root.addEventListener( "impress:init", function() {
 
-            // STEP CLASSES
-            steps.forEach( function( step ) {
-                step.classList.add( "future" );
-            } );
-
-            root.addEventListener( "impress:stepenter", function( event ) {
+            function handleStepEnter( event ) {
                 event.target.classList.remove( "past" );
                 event.target.classList.remove( "future" );
                 event.target.classList.add( "present" );
-            }, false );
+            }
 
-            root.addEventListener( "impress:stepleave", function( event ) {
+            function handleStepLeave( event ) {
                 event.target.classList.remove( "present" );
                 event.target.classList.add( "past" );
-            }, false );
+            }
+
+            // STEP CLASSES
+            steps.forEach( function( step ) {
+                step.classList.add( "future" );
+            });
+
+            root.addEventListener( "impress:stepenter", handleStepEnter, false );
+
+            root.addEventListener( "impress:stepleave", handleStepLeave, false );
+
+            root.addEventListener( "impress:close", function handleClose() {
+              root.removeEventListener("impress:stepenter", handleStepEnter);
+              root.removeEventListener("impress:stepleave", handleStepLeave);
+              root.removeEventListener("impress:close", handleClose);
+            }, false);
 
         }, false );
 
@@ -625,17 +635,11 @@
             // Last hash detected
             var lastHash = "";
 
-            // `#/step-id` is used instead of `#step-id` to prevent default browser
-            // scrolling to element in hash.
-            //
-            // And it has to be set after animation finishes, because in Chrome it
-            // makes transtion laggy.
-            // BUG: http://code.google.com/p/chromium/issues/detail?id=62820
-            root.addEventListener( "impress:stepenter", function( event ) {
+            function handleStepEnter( event ) {
                 window.location.hash = lastHash = "#/" + event.target.id;
-            }, false );
+            }
 
-            window.addEventListener( "hashchange", function() {
+            function handleHashChange() {
 
                 // When the step is entered hash in the location is updated
                 // (just few lines above from here), so the hash change is
@@ -645,7 +649,23 @@
                 if ( window.location.hash !== lastHash ) {
                     goto( getElementFromHash() );
                 }
-            }, false );
+            }
+
+            // `#/step-id` is used instead of `#step-id` to prevent default browser
+            // scrolling to element in hash.
+            //
+            // And it has to be set after animation finishes, because in Chrome it
+            // makes transtion laggy.
+            // BUG: http://code.google.com/p/chromium/issues/detail?id=62820
+            root.addEventListener( "impress:stepenter", handleStepEnter, false );
+
+            window.addEventListener( "hashchange", handleHashChange, false );
+
+            root.addEventListener( "impress:close", function handleClose() {
+              root.removeEventListener("impress:stepenter", handleStepEnter);
+              window.removeEventListener("hashchange", handleHashChange);
+              root.removeEventListener("impress:close", handleClose);
+            }, false);
 
             // START
             // by selecting step defined in url or first step of the presentation
@@ -693,6 +713,112 @@
         };
     };
 
+    function impressHandleKeyDown( event ) {
+        if ( event.keyCode === 9 ||
+           ( event.keyCode >= 32 && event.keyCode <= 34 ) ||
+           ( event.keyCode >= 37 && event.keyCode <= 40 ) ) {
+            event.preventDefault();
+        }
+    }
+
+    function impressHandleKeyUp( event ) {
+
+        if ( event.shiftKey || event.altKey || event.ctrlKey || event.metaKey ) {
+            return;
+        }
+
+        if ( event.keyCode === 9 ||
+           ( event.keyCode >= 32 && event.keyCode <= 34 ) ||
+           ( event.keyCode >= 37 && event.keyCode <= 40 ) ) {
+            switch ( event.keyCode ) {
+                case 33: // Page up
+                case 37: // Left
+                case 38: // Up
+                         api.prev();
+                         break;
+                case 9:  // Tab
+                case 32: // Space
+                case 34: // Page down
+                case 39: // Right
+                case 40: // Down
+                         api.next();
+                         break;
+            }
+
+            event.preventDefault();
+        }
+    }
+
+    function impressHandleLinkClick( event ) {
+        // Event delegation with "bubbling"
+        // Check if event target (or any of its parents is a link)
+        var target = event.target;
+        while ( ( target.tagName !== "A" ) &&
+                ( target !== document.documentElement ) ) {
+            target = target.parentNode;
+        }
+
+        if ( target.tagName === "A" ) {
+            var href = target.getAttribute( "href" );
+
+            // If it's a link to presentation step, target this step
+            if ( href && href[ 0 ] === "#" ) {
+                target = document.getElementById( href.slice( 1 ) );
+            }
+        }
+
+        if ( api.goto( target ) ) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
+        }
+    }
+
+    function impressHandleStepClick( event ) {
+        var target = event.target;
+
+        // Find closest step element that is not active
+        while ( !( target.classList.contains( "step" ) &&
+                  !target.classList.contains( "active" ) ) &&
+                  ( target !== document.documentElement ) ) {
+            target = target.parentNode;
+        }
+
+        if ( api.goto( target ) ) {
+            event.preventDefault();
+        }
+    }
+
+    function impressHandleTouchStart( event ) {
+        if ( event.touches.length === 1 ) {
+            var x = event.touches[ 0 ].clientX,
+                width = window.innerWidth * 0.3,
+                result = null;
+
+            if ( x < width ) {
+                result = api.prev();
+            } else if ( x > window.innerWidth - width ) {
+                result = api.next();
+            }
+
+            if ( result ) {
+                event.preventDefault();
+            }
+        }
+    }
+
+    var timer = null;
+    function impressHandleResize() {
+        function apiResize() {
+            api.goto( document.querySelector( ".step.active" ), 500 );
+        }
+
+        var context = this, args = arguments;
+        clearTimeout( timer );
+        timer = setTimeout( function() {
+            apiResize.apply( context, args );
+        }, 250);
+    }
+
     // Wait for impress.js to be initialized
     document.addEventListener( "impress:init", function( event ) {
 
@@ -705,13 +831,7 @@
         // KEYBOARD NAVIGATION HANDLERS
 
         // Prevent default keydown action when one of supported key is pressed.
-        document.addEventListener( "keydown", function( event ) {
-            if ( event.keyCode === 9 ||
-               ( event.keyCode >= 32 && event.keyCode <= 34 ) ||
-               ( event.keyCode >= 37 && event.keyCode <= 40 ) ) {
-                event.preventDefault();
-            }
-        }, false );
+        document.addEventListener( "keydown", impressHandleKeyDown, false );
 
         // Trigger impress action (next or prev) on keyup.
 
@@ -728,103 +848,36 @@
         //   positioning. I didn't want to just prevent this default action, so I used [tab]
         //   as another way to moving to next step... And yes, I know that for the sake of
         //   consistency I should add [shift+tab] as opposite action...
-        document.addEventListener( "keyup", function( event ) {
-
-            if ( event.shiftKey || event.altKey || event.ctrlKey || event.metaKey ) {
-                return;
-            }
-
-            if ( event.keyCode === 9 ||
-               ( event.keyCode >= 32 && event.keyCode <= 34 ) ||
-               ( event.keyCode >= 37 && event.keyCode <= 40 ) ) {
-                switch ( event.keyCode ) {
-                    case 33: // Page up
-                    case 37: // Left
-                    case 38: // Up
-                             api.prev();
-                             break;
-                    case 9:  // Tab
-                    case 32: // Space
-                    case 34: // Page down
-                    case 39: // Right
-                    case 40: // Down
-                             api.next();
-                             break;
-                }
-
-                event.preventDefault();
-            }
-        }, false );
+        document.addEventListener( "keyup", impressHandleKeyUp, false );
 
         // Delegated handler for clicking on the links to presentation steps
-        document.addEventListener( "click", function( event ) {
-
-            // Event delegation with "bubbling"
-            // Check if event target (or any of its parents is a link)
-            var target = event.target;
-            while ( ( target.tagName !== "A" ) &&
-                    ( target !== document.documentElement ) ) {
-                target = target.parentNode;
-            }
-
-            if ( target.tagName === "A" ) {
-                var href = target.getAttribute( "href" );
-
-                // If it's a link to presentation step, target this step
-                if ( href && href[ 0 ] === "#" ) {
-                    target = document.getElementById( href.slice( 1 ) );
-                }
-            }
-
-            if ( api.goto( target ) ) {
-                event.stopImmediatePropagation();
-                event.preventDefault();
-            }
-        }, false );
+        document.addEventListener( "click", impressHandleLinkClick, false );
 
         // Delegated handler for clicking on step elements
-        document.addEventListener( "click", function( event ) {
-            var target = event.target;
-
-            // Find closest step element that is not active
-            while ( !( target.classList.contains( "step" ) &&
-                      !target.classList.contains( "active" ) ) &&
-                      ( target !== document.documentElement ) ) {
-                target = target.parentNode;
-            }
-
-            if ( api.goto( target ) ) {
-                event.preventDefault();
-            }
-        }, false );
+        document.addEventListener( "click", impressHandleStepClick, false );
 
         // Touch handler to detect taps on the left and right side of the screen
         // based on awesome work of @hakimel: https://github.com/hakimel/reveal.js
-        document.addEventListener( "touchstart", function( event ) {
-            if ( event.touches.length === 1 ) {
-                var x = event.touches[ 0 ].clientX,
-                    width = window.innerWidth * 0.3,
-                    result = null;
-
-                if ( x < width ) {
-                    result = api.prev();
-                } else if ( x > window.innerWidth - width ) {
-                    result = api.next();
-                }
-
-                if ( result ) {
-                    event.preventDefault();
-                }
-            }
-        }, false );
+        //document.addEventListener( "touchstart", impressHandleTouchStart, false );
 
         // Rescale presentation when window is resized
-        window.addEventListener( "resize", throttle( function() {
+        window.addEventListener( "resize", impressHandleResize, false );
 
-            // Force going to active step again, to trigger rescaling
-            api.goto( document.querySelector( ".step.active" ), 500 );
-        }, 250 ), false );
+        document.addEventListener('impress:close',
+          function impressHandleClose( event ) {
+            console.log('impress:close event dispatched');
 
+            // Remove event listeners
+            document.removeEventListener('keydown', impressHandleKeyDown);
+            document.removeEventListener('keyup', impressHandleKeyUp);
+            document.removeEventListener('click', impressHandleLinkClick);
+            document.removeEventListener('click', impressHandleStepClick);
+            document.removeEventListener('touchstart', impressHandleTouchStart);
+            window.removeEventListener('resize', impressHandleResize);
+
+            // Remove this event listener
+            document.removeEventListener('impress:close', impressHandleClose);
+        }, false);
     }, false );
 } )( document, window );
 
