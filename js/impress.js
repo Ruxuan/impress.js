@@ -239,9 +239,10 @@
         rootId = rootId || "impress";
 
         // If given root is already initialized just return the API
-        if ( roots[ "impress-root-" + rootId ] ) {
-            return roots[ "impress-root-" + rootId ];
-        }
+        // Ru: We want to re run when going to another presentation
+        //if ( roots[ "impress-root-" + rootId ] ) {
+        //    return roots[ "impress-root-" + rootId ];
+        //}
 
         // Data of all presentation steps
         var stepsData = {};
@@ -371,11 +372,7 @@
             // Set initial styles
             document.documentElement.style.height = "100%";
 
-            css( body, {
-                height: "100%",
-                overflow: "hidden"
-            } );
-
+            // Ru: TODO change root styles for impress container
             var rootStyles = {
                 position: "absolute",
                 transformOrigin: "top left",
@@ -446,7 +443,8 @@
             //
             // If you are reading this and know any better way to handle it, I'll be glad to hear
             // about it!
-            window.scrollTo( 0, 0 );
+            // TODO: bring it back when fullscreened
+            //window.scrollTo( 0, 0 );
 
             var step = stepsData[ "impress-" + el.id ];
 
