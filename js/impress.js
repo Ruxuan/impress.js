@@ -90,6 +90,11 @@
         return document.getElementById( id );
     };
 
+    var getContainer = function(container) {
+      container = container || 'impress-container';
+      return document.getElementById(container);
+    }
+
     // `$` returns first element for given CSS `selector` in the `context` of
     // the given element or whole document.
     var $ = function( selector, context ) {
@@ -149,9 +154,9 @@
 
     // `computeWindowScale` counts the scale factor between window size and size
     // defined for the presentation in the config.
-    var computeWindowScale = function( config ) {
-        var hScale = window.innerHeight / config.height,
-            wScale = window.innerWidth / config.width,
+    var computeWindowScale = function( config, container ) {
+        var hScale = container.clientHeight / config.height,
+            wScale = container.clientWidth / config.width,
             scale = hScale > wScale ? wScale : hScale;
 
         if ( config.maxScale && scale > config.maxScale ) {
@@ -263,6 +268,7 @@
         var windowScale = null;
 
         // Root presentation elements
+        var container = getContainer();
         var root = byId( rootId );
         var canvas = document.createElement( "div" );
         canvas.id = "canvas";
@@ -361,7 +367,7 @@
                 )
             };
 
-            windowScale = computeWindowScale( config );
+            windowScale = computeWindowScale( config, container );
 
             // Wrap steps with "canvas" element
             arrayify( root.childNodes ).forEach( function( el ) {
@@ -485,7 +491,7 @@
             // If the same step is re-selected, force computing window scaling,
             // because it is likely to be caused by window resize
             if ( el === activeStep ) {
-                windowScale = computeWindowScale( config );
+                windowScale = computeWindowScale( config, container );
             }
 
             var targetScale = target.scale * windowScale;
@@ -600,7 +606,7 @@
 
         // fullscreen
         // var fullscreen api function
-        // TODO: Modify changes to body to changes to impress wrapper div?
+        // TODO: Modify changes to body/window to changes to impress wrapper div?
         /*css( body, {
             height: "100%",
             overflow: "hidden"
