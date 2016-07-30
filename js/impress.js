@@ -170,18 +170,17 @@
 
     var ua = navigator.userAgent.toLowerCase();
     var impressSupported =
+        // Browser should support CSS 3D transtorms
+        ( pfx( "perspective" ) !== null ) &&
 
-                          // Browser should support CSS 3D transtorms
-                           ( pfx( "perspective" ) !== null ) &&
+        // Browser should support `classList` and `dataset` APIs
+        ( body.classList ) &&
+        ( body.dataset ) &&
 
-                          // Browser should support `classList` and `dataset` APIs
-                           ( body.classList ) &&
-                           ( body.dataset ) &&
-
-                          // But some mobile devices need to be blacklisted,
-                          // because their CSS 3D support or hardware is not
-                          // good enough to run impress.js properly, sorry...
-                           ( ua.search( /(iphone)|(ipod)|(android)/ ) === -1 );
+        // But some mobile devices need to be blacklisted,
+        // because their CSS 3D support or hardware is not
+        // good enough to run impress.js properly, sorry...
+        ( ua.search( /(iphone)|(ipod)|(android)/ ) === -1 );
 
     if ( !impressSupported ) {
 
@@ -212,7 +211,9 @@
     };
 
     // It's just an empty function ... and a useless comment.
-    var empty = function() { return false; };
+    var empty = function() {
+      console.log('impress is not supported on this browser');
+    };
 
     // IMPRESS.JS API
 
@@ -262,6 +263,7 @@
         // Root presentation elements
         var root = byId( rootId );
         var canvas = document.createElement( "div" );
+        canvas.id = "canvas";
 
         var initialized = false;
 
@@ -403,7 +405,7 @@
             };
 
             initialized = true;
-
+            window.api  = roots["impress-root-" + rootId];
             triggerEvent( root, "impress:init", { api: roots[ "impress-root-" + rootId ] } );
         };
 
@@ -824,7 +826,6 @@
         }, 250 ), false );
 
     }, false );
-
 } )( document, window );
 
 // THAT'S ALL FOLKS!
