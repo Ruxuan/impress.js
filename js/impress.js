@@ -231,7 +231,8 @@
                 init: empty,
                 goto: empty,
                 prev: empty,
-                next: empty
+                next: empty,
+                close: empty
             };
         }
 
@@ -586,6 +587,27 @@
             return goto( next );
         };
 
+        // Remove event listeners
+        var close = function() {
+          console.log('api.close called');
+
+          document.documentElement.style.height = null;
+          body.classList.remove( "impress-disabled" );
+          body.classList.remove( "impress-enabled" );
+          body.classList.remove( "impress-on-" + activeStep.id );
+
+          window.api = null;
+          triggerEvent(root, "impress:close");
+        }
+
+        // fullscreen
+        // var fullscreen api function
+        // TODO: Modify changes to body to changes to impress wrapper div?
+        /*css( body, {
+            height: "100%",
+            overflow: "hidden"
+        } );*/
+
         // Adding some useful classes to step elements.
         //
         // All the steps that have not been shown yet are given `future` class.
@@ -679,7 +701,8 @@
             init: init,
             goto: goto,
             next: next,
-            prev: prev
+            prev: prev,
+            close: close
         } );
 
     };
