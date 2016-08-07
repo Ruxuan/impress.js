@@ -739,111 +739,6 @@
         };
     };
 
-    function impressHandleKeyDown( event ) {
-        if ( event.keyCode === 9 ||
-           ( event.keyCode >= 32 && event.keyCode <= 34 ) ||
-           ( event.keyCode >= 37 && event.keyCode <= 40 ) ) {
-            event.preventDefault();
-        }
-    }
-
-    function impressHandleKeyUp( event ) {
-
-        if ( event.shiftKey || event.altKey || event.ctrlKey || event.metaKey ) {
-            return;
-        }
-
-        if ( event.keyCode === 9 ||
-           ( event.keyCode >= 32 && event.keyCode <= 34 ) ||
-           ( event.keyCode >= 37 && event.keyCode <= 40 ) ) {
-            switch ( event.keyCode ) {
-                case 33: // Page up
-                case 37: // Left
-                case 38: // Up
-                         api.prev();
-                         break;
-                case 9:  // Tab
-                case 32: // Space
-                case 34: // Page down
-                case 39: // Right
-                case 40: // Down
-                         api.next();
-                         break;
-            }
-
-            event.preventDefault();
-        }
-    }
-
-    function impressHandleLinkClick( event ) {
-        // Event delegation with "bubbling"
-        // Check if event target (or any of its parents is a link)
-        var target = event.target;
-        while ( ( target.tagName !== "A" ) &&
-                ( target !== document.documentElement ) ) {
-            target = target.parentNode;
-        }
-
-        if ( target.tagName === "A" ) {
-            var href = target.getAttribute( "href" );
-
-            // If it's a link to presentation step, target this step
-            if ( href && href[ 0 ] === "#" ) {
-                target = document.getElementById( href.slice( 1 ) );
-            }
-        }
-
-        if ( api.goto( target ) ) {
-            event.stopImmediatePropagation();
-            event.preventDefault();
-        }
-    }
-
-    function impressHandleStepClick( event ) {
-        var target = event.target;
-
-        // Find closest step element that is not active
-        while ( !( target.classList.contains( "step" ) &&
-                  !target.classList.contains( "active" ) ) &&
-                  ( target !== document.documentElement ) ) {
-            target = target.parentNode;
-        }
-
-        if ( api.goto( target ) ) {
-            event.preventDefault();
-        }
-    }
-
-    function impressHandleTouchStart( event ) {
-        if ( event.touches.length === 1 ) {
-            var x = event.touches[ 0 ].clientX,
-                width = window.innerWidth * 0.3,
-                result = null;
-
-            if ( x < width ) {
-                result = api.prev();
-            } else if ( x > window.innerWidth - width ) {
-                result = api.next();
-            }
-
-            if ( result ) {
-                event.preventDefault();
-            }
-        }
-    }
-
-    var timer = null;
-    function impressHandleResize() {
-        function apiResize() {
-            api.goto( document.querySelector( ".step.active" ), 500 );
-        }
-
-        var context = this, args = arguments;
-        clearTimeout( timer );
-        timer = setTimeout( function() {
-            apiResize.apply( context, args );
-        }, 250);
-    }
 
     // Wait for impress.js to be initialized
     document.addEventListener( "impress:init", function( event ) {
@@ -853,6 +748,112 @@
         // or anything. `impress:init` event data gives you everything you
         // need to control the presentation that was just initialized.
         var api = event.detail.api;
+
+        function impressHandleKeyDown( event ) {
+          if ( event.keyCode === 9 ||
+            ( event.keyCode >= 32 && event.keyCode <= 34 ) ||
+            ( event.keyCode >= 37 && event.keyCode <= 40 ) ) {
+            event.preventDefault();
+          }
+        }
+
+        function impressHandleKeyUp( event ) {
+
+          if ( event.shiftKey || event.altKey || event.ctrlKey || event.metaKey ) {
+            return;
+          }
+
+          if ( event.keyCode === 9 ||
+            ( event.keyCode >= 32 && event.keyCode <= 34 ) ||
+            ( event.keyCode >= 37 && event.keyCode <= 40 ) ) {
+            switch ( event.keyCode ) {
+              case 33: // Page up
+              case 37: // Left
+              case 38: // Up
+                api.prev();
+                break;
+              case 9:  // Tab
+              case 32: // Space
+              case 34: // Page down
+              case 39: // Right
+              case 40: // Down
+                api.next();
+                break;
+            }
+
+            event.preventDefault();
+          }
+        }
+
+        function impressHandleLinkClick( event ) {
+          // Event delegation with "bubbling"
+          // Check if event target (or any of its parents is a link)
+          var target = event.target;
+          while ( ( target.tagName !== "A" ) &&
+          ( target !== document.documentElement ) ) {
+            target = target.parentNode;
+          }
+
+          if ( target.tagName === "A" ) {
+            var href = target.getAttribute( "href" );
+
+            // If it's a link to presentation step, target this step
+            if ( href && href[ 0 ] === "#" ) {
+              target = document.getElementById( href.slice( 1 ) );
+            }
+          }
+
+          if ( api.goto( target ) ) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
+          }
+        }
+
+        function impressHandleStepClick( event ) {
+          var target = event.target;
+
+          // Find closest step element that is not active
+          while ( !( target.classList.contains( "step" ) &&
+          !target.classList.contains( "active" ) ) &&
+          ( target !== document.documentElement ) ) {
+            target = target.parentNode;
+          }
+
+          if ( api.goto( target ) ) {
+            event.preventDefault();
+          }
+        }
+
+        function impressHandleTouchStart( event ) {
+          if ( event.touches.length === 1 ) {
+            var x = event.touches[ 0 ].clientX,
+              width = window.innerWidth * 0.3,
+              result = null;
+
+            if ( x < width ) {
+              result = api.prev();
+            } else if ( x > window.innerWidth - width ) {
+              result = api.next();
+            }
+
+            if ( result ) {
+              event.preventDefault();
+            }
+          }
+        }
+
+        var timer = null;
+        function impressHandleResize() {
+          function apiResize() {
+            api.goto( document.querySelector( ".step.active" ), 500 );
+          }
+
+          var context = this, args = arguments;
+          clearTimeout( timer );
+          timer = setTimeout( function() {
+            apiResize.apply( context, args );
+          }, 250);
+        }
 
         // KEYBOARD NAVIGATION HANDLERS
 
