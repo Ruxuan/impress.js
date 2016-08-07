@@ -93,7 +93,7 @@
     var getContainer = function(container) {
       container = container || 'impress-container';
       return document.getElementById(container);
-    }
+    };
 
     // `$` returns first element for given CSS `selector` in the `context` of
     // the given element or whole document.
@@ -602,7 +602,7 @@
 
           window.api = null;
           triggerEvent(root, "impress:close");
-        }
+        };
 
         // fullscreen
         // var fullscreen api function
