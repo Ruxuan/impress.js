@@ -409,7 +409,6 @@
             };
 
             initialized = true;
-            window.api  = roots["impress-root-" + rootId];
             triggerEvent( root, "impress:init", { api: roots[ "impress-root-" + rootId ] } );
         };
 
