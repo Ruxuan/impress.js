@@ -274,6 +274,12 @@
         canvas.id = "canvas";
         var progressBar = document.createElement( "div" );
         progressBar.id = "progress-bar";
+        var fullScreenButton = document.createElement( "div" );
+        fullScreenButton.id = "fullscreenbutton";
+        fullScreenButton.className = "fa fa-arrows-alt";
+
+        var impressStyle = document.createElement("style");
+        container.insertBefore(impressStyle, root);
 
         var initialized = false;
 
@@ -301,9 +307,9 @@
         // `onStepLeave` is called whenever the step element is left
         // but the event is triggered only if the step is the same as
         // last entered step.
-        var onStepLeave = function( step ) {
-            if ( lastEntered === step ) {
-                triggerEvent( step, "impress:stepleave" );
+        var onStepLeave = function( currentStep, nextStep ) {
+            if ( lastEntered === currentStep ) {
+                triggerEvent( currentStep, "impress:stepleave", { next : nextStep } );
                 lastEntered = null;
             }
         };
@@ -396,6 +402,19 @@
             } );
             css( canvas, rootStyles );
 
+            // TODO: add support for other browsers
+            impressStyle.sheet.addRule("#impress-container:-webkit-full-screen",
+              "width:100%; height:100%", 0);
+
+            // Style for full screen
+            var fullScreenButtonStyles = {
+              position: "absolute",
+              bottom: "3px",
+              right: "3px",
+            };
+            css(fullScreenButton, fullScreenButtonStyles);
+            container.appendChild(fullScreenButton);
+
             // Styles for progressBar
             var progressBarStyles = {
                 position: "absolute",
@@ -408,6 +427,7 @@
             };
             css(progressBar, progressBarStyles);
             container.appendChild(progressBar);
+
             body.classList.remove( "impress-disabled" );
             body.classList.add( "impress-enabled" );
 
@@ -429,6 +449,7 @@
                 api: roots[ "impress-root-" + rootId ] ,
                 steps: steps,
                 progressBar: progressBar,
+                fullScreenButton: fullScreenButton
               }
             );
         };
@@ -648,6 +669,7 @@
 
             var steps            = event.detail.steps;
             var progressBar      = event.detail.progressBar;
+            var fullScreenButton = event.detail.fullScreenButton;
             var stepids          = [];
 
             for (var i = 0; i < steps.length; i++) {
@@ -663,6 +685,44 @@
                 progressBar.style.width = (slice * slideNumber).toFixed(2) + '%';
               }
             }
+
+            function handleFullScreen( event ) {
+              var i = getContainer();
+              if (
+                document.fullscreenEnabled ||
+                document.webkitFullscreenEnabled ||
+                document.mozFullScreenEnabled ||
+                document.msFullscreenEnabled
+              ) {
+                if (
+                  document.fullscreenElement ||
+                  document.webkitFullscreenElement ||
+                  document.mozFullScreenElement ||
+                  document.msFullscreenElement
+                ) {
+                  if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                  } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                  } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                  } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                  }
+                } else {
+                  if (i.requestFullscreen) {
+                    i.requestFullscreen();
+                  } else if (i.webkitRequestFullscreen) {
+                    i.webkitRequestFullscreen();
+                  } else if (i.mozRequestFullScreen) {
+                    i.mozRequestFullScreen();
+                  } else if (i.msRequestFullscreen) {
+                    i.msRequestFullscreen();
+                  }
+                }
+              }
+            }
+
             function updateProgressBarOnLeave( event ) {
               updateProgressBar(event.detail.next.id);
             }
@@ -687,12 +747,14 @@
                 step.classList.add( "future" );
             });
 
+            fullScreenButton.addEventListener("click", handleFullScreen, false);
             root.addEventListener( "impress:stepenter", handleStepEnter, false );
             root.addEventListener( "impress:stepenter", updateProgressBarOnEnter, false);
             root.addEventListener( "impress:stepleave", handleStepLeave, false );
             root.addEventListener( "impress:stepleave", updateProgressBarOnLeave, false);
 
             root.addEventListener( "impress:close", function handleClose() {
+              fullScreenButton.addEventListener("click", handleFullScreen);
               root.removeEventListener("impress:stepenter", handleStepEnter);
               root.removeEventListener("impress:stepenter", updateProgressBarOnEnter);
               root.removeEventListener("impress:stepleave", handleStepLeave);
