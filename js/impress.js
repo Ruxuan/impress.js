@@ -272,6 +272,8 @@
         var root = byId( rootId );
         var canvas = document.createElement( "div" );
         canvas.id = "canvas";
+        var progressBar = document.createElement( "div" );
+        progressBar.id = "progress-bar";
 
         var initialized = false;
 
@@ -394,6 +396,18 @@
             } );
             css( canvas, rootStyles );
 
+            // Styles for progressBar
+            var progressBarStyles = {
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                height: "3px",
+                width: "3px",
+                background: "orange",
+                transition: "width 1s ease-in-out"
+            };
+            css(progressBar, progressBarStyles);
+            container.appendChild(progressBar);
             body.classList.remove( "impress-disabled" );
             body.classList.add( "impress-enabled" );
 
@@ -409,7 +423,14 @@
             };
 
             initialized = true;
-            triggerEvent( root, "impress:init", { api: roots[ "impress-root-" + rootId ] } );
+
+            triggerEvent( root, "impress:init",
+              {
+                api: roots[ "impress-root-" + rootId ] ,
+                steps: steps,
+                progressBar: progressBar,
+              }
+            );
         };
 
         // `getStep` is a helper function that returns a step element defined by parameter.
@@ -497,7 +518,7 @@
 
             // Trigger leave of currently active element (if it's not the same step again)
             if ( activeStep && activeStep !== el ) {
-                onStepLeave( activeStep );
+                onStepLeave( activeStep, el );
             }
 
             // Now we alter transforms of `root` and `canvas` to trigger transitions.
@@ -599,7 +620,6 @@
           body.classList.remove( "impress-enabled" );
           body.classList.remove( "impress-on-" + activeStep.id );
 
-          window.api = null;
           triggerEvent(root, "impress:close");
         };
 
@@ -624,7 +644,32 @@
         // There classes can be used in CSS to style different types of steps.
         // For example the `present` class can be used to trigger some custom
         // animations when step is shown.
-        root.addEventListener( "impress:init", function() {
+        root.addEventListener( "impress:init", function(event) {
+
+            var steps            = event.detail.steps;
+            var progressBar      = event.detail.progressBar;
+            var stepids          = [];
+
+            for (var i = 0; i < steps.length; i++) {
+              stepids[i] = steps[i].id;
+            }
+
+            function updateProgressBar( slideId ) {
+              var slideNumber = stepids.indexOf(slideId);
+              if (slideNumber === 0) {
+                progressBar.style.width = "3px";
+              } else {
+                var slice = 100 / (stepids.length - 1);
+                progressBar.style.width = (slice * slideNumber).toFixed(2) + '%';
+              }
+            }
+            function updateProgressBarOnLeave( event ) {
+              updateProgressBar(event.detail.next.id);
+            }
+
+            function updateProgressBarOnEnter( event ) {
+              updateProgressBar(event.target.id);
+            }
 
             function handleStepEnter( event ) {
                 event.target.classList.remove( "past" );
@@ -643,12 +688,15 @@
             });
 
             root.addEventListener( "impress:stepenter", handleStepEnter, false );
-
+            root.addEventListener( "impress:stepenter", updateProgressBarOnEnter, false);
             root.addEventListener( "impress:stepleave", handleStepLeave, false );
+            root.addEventListener( "impress:stepleave", updateProgressBarOnLeave, false);
 
             root.addEventListener( "impress:close", function handleClose() {
               root.removeEventListener("impress:stepenter", handleStepEnter);
+              root.removeEventListener("impress:stepenter", updateProgressBarOnEnter);
               root.removeEventListener("impress:stepleave", handleStepLeave);
+              root.removeEventListener("impress:stepleave", updateProgressBarOnLeave);
               root.removeEventListener("impress:close", handleClose);
             }, false);
 
@@ -683,7 +731,6 @@
             // makes transtion laggy.
             // BUG: http://code.google.com/p/chromium/issues/detail?id=62820
             root.addEventListener( "impress:stepenter", handleStepEnter, false );
-
             window.addEventListener( "hashchange", handleHashChange, false );
 
             root.addEventListener( "impress:close", function handleClose() {
