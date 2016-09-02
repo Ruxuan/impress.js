@@ -490,7 +490,6 @@
             //
             // If you are reading this and know any better way to handle it, I'll be glad to hear
             // about it!
-            // TODO: bring it back when fullscreened
             //window.scrollTo( 0, 0 );
 
             var step = stepsData[ "impress-" + el.id ];
@@ -634,7 +633,6 @@
 
         // Remove event listeners
         var close = function() {
-          console.log('api.close called');
 
           document.documentElement.style.height = null;
           body.classList.remove( "impress-disabled" );
@@ -1001,7 +999,6 @@
 
         document.addEventListener('impress:close',
           function impressHandleClose( event ) {
-            console.log('impress:close event dispatched');
 
             // Remove event listeners
             document.removeEventListener('keydown', impressHandleKeyDown);
