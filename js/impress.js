@@ -411,6 +411,7 @@
               position: "absolute",
               bottom: "3px",
               right: "3px",
+              cursor: "pointer"
             };
             css(fullScreenButton, fullScreenButtonStyles);
             container.appendChild(fullScreenButton);
